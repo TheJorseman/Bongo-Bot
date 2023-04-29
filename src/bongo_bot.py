@@ -1,10 +1,12 @@
 from collections import defaultdict
 import logging
 from os import getenv
+from pathlib import Path
 
 import asyncpg
 import discord
 from discord.ext import commands
+import wavelink
 
 import server_infomation
 
@@ -18,18 +20,35 @@ class Bongo_Bot(commands.Bot):
 
         self.variables_for_guilds = defaultdict(server_infomation.Server_Infomation)
 
-
     async def on_ready(self):
         log.info(f'Logged in as {self.user} (ID: {self.user.id})')
 
         #sync new commands
         await self.tree.sync()
 
+    async def on_ready(self):
+        print(f'Logged in as {self.user} (ID: {self.user.id})')
+        print('------')
+
     async def setup_hook(self):
-        #create and setup database
+        #cogs setup
+        root_path = Path(__file__).parent.resolve().parent.resolve() 
+        for file in root_path.glob('./src/cogs/*.py'):
+            await self.load_extension(f'cogs.{file.name[:-3]}')
+
+        #database setup
         await self.create_database_pool()
         await self.load_data()
-        pass
+
+        #wavelink setup
+        node: wavelink.Node = wavelink.Node(
+            uri='http://localhost:2333', 
+            password='password')
+        
+        await wavelink.NodePool.connect(client=self, nodes=[node])
+
+        #sync new commands
+        await self.tree.sync()
 
     async def on_tree_error(self, interaction: discord.Interaction, error: discord.app_commands.AppCommandError):
         if isinstance(error, discord.app_commands.CommandOnCooldown):
@@ -39,7 +58,6 @@ class Bongo_Bot(commands.Bot):
         if self.database is not None:
             await self.database.close()
             log.info("Database shutdown")
-
 
         await super().close()
 
