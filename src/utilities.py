@@ -38,7 +38,7 @@ async def able_to_use_commands(interaction: discord.Interaction, is_playing: boo
     return True
 
 async def edit_view_message(bot, guild_id: int, change_to):
-    playing_view_message = bot.get_channel(bot.variables_for_guilds[guild_id].playing_view_channel_id).get_partial_message(bot.variables_for_guilds[guild_id].playing_view_message_id)
+    playing_view_message = bot.get_channel(bot.cache[guild_id].playing_view_channel_id).get_partial_message(bot.cache[guild_id].playing_view_message_id)
     await playing_view_message.edit(view=change_to)
 
 async def get_milliseconds_from_string(time_string: str, interaction: discord.Interaction) -> int:
@@ -61,16 +61,6 @@ async def get_milliseconds_from_string(time_string: str, interaction: discord.In
     total_seconds += list_of_units[0] #total seconds
 
     return (total_seconds * 1000) #turn into milliseconds
-
-async def get_voice(interaction: discord.Interaction, print: bool = True) -> Custom_Player:
-    voice: Custom_Player = interaction.guild.voice_client
-
-    if voice is None: #not connected to voice
-        if print:
-            await interaction.response.send_message("Nothing is playing")
-        return None
-
-    return voice
 
 def seconds_to_timestring(total_seconds: int) -> str:
     """Takes the total amount of seconds and returns a time like `1:35:54` or `1:23`"""

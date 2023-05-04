@@ -1,5 +1,4 @@
 import logging
-from os import getenv
 import re
 
 import discord
@@ -9,7 +8,7 @@ import wavelink
 
 from custom_player import Custom_Player
 from playing_view import Playing_View
-from utilities import able_to_use_commands, edit_view_message,get_milliseconds_from_string
+from utilities import able_to_use_commands, edit_view_message, get_milliseconds_from_string
 
 log = logging.getLogger(__name__)
 
@@ -19,24 +18,6 @@ class Play(commands.Cog):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_ready(self):
-        pass
-
-    async def cog_load(self):
-        pass
-        # self.bot.loop.create_task(self.connect_nodes())
-
-    # async def connect_nodes(self):
-    #     """Connect to our Lavalink nodes."""
-    #     await self.bot.wait_until_ready()
-    #     await wavelink.NodePool.connect(
-    #         client=self.bot,
-    #         host=getenv('LAVALINK_HOST'),
-    #         port=getenv('LAVALINK_PORT'),
-    #         password=getenv('LAVALINK_PASSWORD')
-    #     )
-
-    @commands.Cog.listener()
     async def on_wavelink_node_ready(self, node: wavelink.Node):
         """Event fired when a node has finished connecting."""
         log.info(f'Lavalink Connected')
@@ -44,7 +25,7 @@ class Play(commands.Cog):
     @commands.Cog.listener()
     async def on_wavelink_track_start(self, payload: wavelink.TrackEventPayload):
         log.info(f'Now playing "{payload.track.title}" name: {payload.player.guild.name}, id: {payload.player.guild.id}')
-        self.bot.variables_for_guilds[payload.player.guild.id].is_playing = True
+        self.bot.cache[payload.player.guild.id].is_playing = True
 
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, payload: wavelink.TrackEventPayload):
@@ -52,8 +33,8 @@ class Play(commands.Cog):
         #old view can cause problems
         await edit_view_message(self.bot, payload.player.guild.id, None)
 
-        if len(self.bot.variables_for_guilds[payload.player.guild.id].song_queue) == 0: #queue is empty
-            self.bot.variables_for_guilds[payload.player.guild.id].is_playing = False
+        if len(self.bot.cache[payload.player.guild.id].song_queue) == 0: #queue is empty
+            self.bot.cache[payload.player.guild.id].is_playing = False
             return
 
         #else we want to keep playing
@@ -66,11 +47,6 @@ class Play(commands.Cog):
 
         else: #already connected
             voice: Custom_Player = interaction.guild.voice_client
-
-        return voice
-
-    async def get_voice_from_id(self, guild_id:int) -> discord.VoiceProtocol:
-        voice: Custom_Player = self.bot.get_guild(guild_id).voice_client
 
         return voice
 
@@ -96,7 +72,7 @@ class Play(commands.Cog):
         await self.search_track(interaction, query, play_next, start_time)
 
     async def search_track(self, interaction: discord.Interaction, query, play_next, start):
-        if not await able_to_use_commands(interaction, self.bot.variables_for_guilds[interaction.guild_id].is_playing, self.bot.variables_for_guilds[interaction.guild_id].music_channel_id, self.bot.variables_for_guilds[interaction.guild_id].music_role_id): #user is not in voice chat
+        if not await able_to_use_commands(interaction, self.bot.cache[interaction.guild_id].is_playing, self.bot.cache[interaction.guild_id].music_channel_id, self.bot.cache[interaction.guild_id].music_role_id): #user is not in voice chat
             return
 
         URL_RE = re.compile("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
@@ -122,11 +98,11 @@ class Play(commands.Cog):
         """Takes a track and adds it to the queue, and if nothing is playing this sends it to play"""
         #add to queue
         if play_next:
-            self.bot.variables_for_guilds[interaction.guild_id].song_queue.append((track, interaction.channel, start))
+            self.bot.cache[interaction.guild_id].song_queue.append((track, interaction.channel, start))
             await interaction.response.send_message(f"**Added** 🎵 `{track.uri}` to the top of the queue")
 
         else: #add to top
-            self.bot.variables_for_guilds[interaction.guild_id].song_queue.appendleft((track, interaction.channel, start))
+            self.bot.cache[interaction.guild_id].song_queue.appendleft((track, interaction.channel, start))
             await interaction.response.send_message(f"**Added** 🎵 `{track.uri}` to queue")
 
         #if not playing we start playing
@@ -136,7 +112,7 @@ class Play(commands.Cog):
         """Adds each video individually to the queue"""
         index = 0
         for track in playlist.tracks:
-            self.bot.variables_for_guilds[interaction.guild_id].song_queue.appendleft((track, interaction.channel, None))
+            self.bot.cache[interaction.guild_id].song_queue.appendleft((track, interaction.channel, None))
 
             index += 1
 
@@ -145,31 +121,31 @@ class Play(commands.Cog):
 
     async def play_if_not(self, interaction, guild_id):
         await self.connect(interaction)
-        if not self.bot.variables_for_guilds[guild_id].is_playing:
+        if not self.bot.cache[guild_id].is_playing:
             await self.play_song(guild_id)
 
     async def play_song(self, guild_id):
         """plays the first song in the queue"""
-        self.bot.variables_for_guilds[guild_id].user_who_want_to_skip.clear() #reset list
-        track, channel, start = self.bot.variables_for_guilds[guild_id].song_queue.pop()
+        self.bot.cache[guild_id].user_who_want_to_skip.clear() #reset list
+        track, channel, start = self.bot.cache[guild_id].song_queue.pop()
 
-        if self.bot.variables_for_guilds[guild_id].loop_enabled:
+        if self.bot.cache[guild_id].loop_enabled:
             #add the track back into the front
-            self.bot.variables_for_guilds[guild_id].song_queue.append((track, channel, start))
+            self.bot.cache[guild_id].song_queue.append((track, channel, start))
 
-        self.bot.variables_for_guilds[guild_id].now_playing_track = track
+        self.bot.cache[guild_id].now_playing_track = track
 
         #connect bot to voice chat
-        voice = await self.get_voice_from_id(channel.guild.id)
+        voice = await self.bot.get_voice(channel.guild.id)
 
         #play track
-        await voice.play(track, start=start, volume=self.bot.variables_for_guilds[guild_id].volume)
+        await voice.play(track, start=start, volume=self.bot.cache[guild_id].volume)
         playing_view = Playing_View(self.bot)
         playing_view_msg: discord.Message = await channel.send(f'**Playing** 🎶 `{track.title}` by `{track.author}` - Now!', view=playing_view)
 
-        self.bot.variables_for_guilds[guild_id].playing_view = playing_view
-        self.bot.variables_for_guilds[guild_id].playing_view_channel_id = channel.id
-        self.bot.variables_for_guilds[guild_id].playing_view_message_id = playing_view_msg.id
+        self.bot.cache[guild_id].playing_view = playing_view
+        self.bot.cache[guild_id].playing_view_channel_id = channel.id
+        self.bot.cache[guild_id].playing_view_message_id = playing_view_msg.id
 
 async def setup(bot):
     await bot.add_cog(Play(bot))

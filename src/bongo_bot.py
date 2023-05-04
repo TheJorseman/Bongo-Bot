@@ -8,7 +8,8 @@ import discord
 from discord.ext import commands
 import wavelink
 
-import server_infomation
+from custom_player import Custom_Player
+from server_infomation import Server_Infomation
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ class Bongo_Bot(commands.Bot):
         super().__init__(command_prefix = "!", intents = self.get_intents(), *args, **kwargs)
         self.tree.on_error = self.on_tree_error
 
-        self.variables_for_guilds = defaultdict(server_infomation.Server_Infomation)
+        self.cache = defaultdict(Server_Infomation)
 
     async def on_ready(self):
         log.info(f'Logged in as {self.user} (ID: {self.user.id})')
@@ -88,12 +89,21 @@ class Bongo_Bot(commands.Bot):
         log.info("Database connected")
 
     async def load_data(self) -> None:
-        """Loads the entire table entry by entry into variables_for_guilds"""
+        """Loads the entire table entry by entry into cache"""
         records = await self.database.fetch('SELECT * FROM guilds')
 
         for record in records:
-            self.variables_for_guilds[record['guild_id']].music_channel_id = record['music_channel_id']
-            self.variables_for_guilds[record['guild_id']].music_role_id = record['music_role_id']
-            self.variables_for_guilds[record['guild_id']].volume = record['volume']
+            self.cache[record['guild_id']].music_channel_id = record['music_channel_id']
+            self.cache[record['guild_id']].music_role_id = record['music_role_id']
+            self.cache[record['guild_id']].volume = record['volume']
 
         log.info("Database loaded into cache")
+
+    async def get_voice(self, guild_id: int, interaction: discord.Interaction = None) -> Custom_Player:
+        voice: Custom_Player = self.get_guild(guild_id).voice_client
+
+        if voice is None: #not connected to voice
+            await interaction.response.send_message("Nothing is playing")
+            return None
+
+        return voice
