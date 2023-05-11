@@ -23,7 +23,7 @@ class Now_Playing(commands.Cog):
             await interaction.response.send_message("Nothing is playing")
             return
 
-        voice_position = (await self.bot.get_voice(interaction.guild_id, interaction)).position
+        voice_position = (await self.bot.get_voice(interaction.guild_id, interaction)).position / 1000
 
         embed = discord.Embed(
             title = "**Now Playing** 🎶",
@@ -31,12 +31,18 @@ class Now_Playing(commands.Cog):
             color = discord.Color.red(),
             description=""
         )
-        embed.set_thumbnail(url="https://i.ytimg.com/vi_webp/" + self.bot.cache[interaction.guild_id].now_playing_track.identifier + "/maxresdefault.webp")
+        embed.set_thumbnail(url=self.bot.cache[interaction.guild_id].now_playing_track.thumbnail)
         embed.add_field(name="Title", value=self.bot.cache[interaction.guild_id].now_playing_track.title, inline=False)
         embed.add_field(name="Uploader", value=self.bot.cache[interaction.guild_id].now_playing_track.author)
 
-        total_seconds = self.bot.cache[interaction.guild_id].now_playing_track.length
-        embed.add_field(name="Duration", value=f'{seconds_to_timestring(voice_position)}/{seconds_to_timestring(total_seconds)}')
+        total_seconds = self.bot.cache[interaction.guild_id].now_playing_track.length / 1000
+        print("total_seconds",total_seconds)
+
+        if self.bot.cache[interaction.guild_id].now_playing_track.is_stream:
+            embed.add_field(name="Duration", value="Livestream")
+
+        else:
+            embed.add_field(name="Duration", value=f'{seconds_to_timestring(voice_position)}/{seconds_to_timestring(total_seconds)}')
 
         await interaction.response.send_message(embed=embed)
 
