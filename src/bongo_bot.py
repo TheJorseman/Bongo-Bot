@@ -8,8 +8,7 @@ import discord
 from discord.ext import commands
 import wavelink
 
-from custom_player import Custom_Player
-from server_infomation import Server_Infomation
+from cache import Cache
 
 log = logging.getLogger(__name__)
 
@@ -19,17 +18,10 @@ class Bongo_Bot(commands.Bot):
         super().__init__(command_prefix = "!", intents = self.get_intents(), *args, **kwargs)
         self.tree.on_error = self.on_tree_error
 
-        self.cache = defaultdict(Server_Infomation)
-
+        self.cache = defaultdict(Cache)
+        
     async def on_ready(self):
         log.info(f'Logged in as {self.user} (ID: {self.user.id})')
-
-        #sync new commands
-        await self.tree.sync()
-
-    async def on_ready(self):
-        print(f'Logged in as {self.user} (ID: {self.user.id})')
-        print('------')
 
     async def setup_hook(self):
         #cogs setup
@@ -57,7 +49,7 @@ class Bongo_Bot(commands.Bot):
             await interaction.response.send_message(str(error), ephemeral=True)
 
     async def close(self):
-        log.info(f'{len(self.voice_clients)} Voice Client to shutdown')
+        log.info(f'{len(self.voice_clients)} Voice Clients to shutdown')
         for voice in self.voice_clients:
             self.get_cog("Disconnect").stop_voice_functions(voice)
 
@@ -103,8 +95,8 @@ class Bongo_Bot(commands.Bot):
 
         log.info("Database loaded into cache")
 
-    async def get_voice(self, guild_id: int, interaction: discord.Interaction = None) -> Custom_Player:
-        voice: Custom_Player = self.get_guild(guild_id).voice_client
+    async def get_voice(self, guild_id: int, interaction: discord.Interaction = None) -> wavelink.Player:
+        voice: wavelink.Player = self.get_guild(guild_id).voice_client
 
         if voice is None: #not connected to voice
             await interaction.response.send_message("Nothing is playing")
