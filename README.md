@@ -28,22 +28,24 @@ The `play` command has three options.
 ```
 #discord bot
 DISCORD_TOKEN=
+# no jala
+COMMAND_PREFIX=!
 
-DATABASE_DATABASE=
-DATABASE_USER=
+DATABASE_DATABASE=postgres
+DATABASE_USER=postgres
 DATABASE_HOST=postgres #docker only
 #DATABASE_HOST=localhost #local only
 DATABASE_PORT=
-DATABASE_PASSWORD=
+DATABASE_PASSWORD=postgres
 
 LAVALINK_HOST=lavalink #docker only
 #LAVALINK_HOST=localhost #local only
-LAVALINK_PORT=
-LAVALINK_PASSWORD=
+LAVALINK_PORT=2333
+LAVALINK_PASSWORD=password
 
 #postgres
-POSTGRES_USER=
-POSTGRES_PASSWORD=
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
 
 #pgadmin
 PGADMIN_DEFAULT_EMAIL=
