@@ -2,10 +2,10 @@ version: '3.5'
 
 services:
   bongo-bot:
-    image: ghcr.io/redhawk18/bongo-bot:latest
+    build: .
     depends_on:
-      lavalink:
-        condition: service_healthy
+      #lavalink:
+      #  condition: service_healthy
       postgres:
         condition: service_healthy
     env_file:
@@ -21,22 +21,17 @@ services:
       LAVALINK_PORT: ${LAVALINK_PORT}
       LAVALINK_PASSWORD: ${LAVALINK_PASSWORD}
       TROLLED_USER_ID: ${TROLLED_USER_ID}
-    networks:
-      - lavalink
-      - postgres
     pull_policy: always
     restart: unless-stopped
 
   lavalink:
     image: ghcr.io/lavalink-devs/lavalink:3.7.6-alpine
     healthcheck:
-      test: ["CMD", "curl", "http://localhost:2333/version"]
+      test: ["CMD-SHELL", "curl", "http://localhost:2333/version"]
       interval: 5s
       timeout: 30s
       retries: 3
       start_period: 20s
-    networks:
-      - lavalink
     ports:
       - "2333:2333"
     restart: unless-stopped
@@ -46,24 +41,25 @@ services:
   postgres:
     image: postgres
     healthcheck:
-      test: ["CMD", "pg_isready"]
+      test: ["CMD-SHELL", "pg_isready"]
       interval: 5s
-      timeout: 30s
+      timeout: 360s
       retries: 3
       start_period: 5s
     env_file:
       - .env
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
+      #POSTGRES_USER: ${POSTGRES_USER}
+      PGUSER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DATABASE_DATABASE: ${DATABASE_DATABASE}
       PGDATA: /data/postgres
-    networks:
-      - postgres
     ports:
       - "5432:5432"
     restart: unless-stopped
     volumes:
-       - postgres:/data/postgres
+       - ./postgres_data:/data/postgres
+       - ./bongo.sql:/docker-entrypoint-initdb.d/bongo.sql
 
   pgadmin:
     image: dpage/pgadmin4
@@ -75,18 +71,8 @@ services:
       PGADMIN_CONFIG_SERVER_MODE: 'False'
     logging:
       driver: "none"
-    networks:
-      - postgres
     ports:
       - "${PGADMIN_PORT}:80"
     restart: unless-stopped
     volumes:
-       - pgadmin:/var/lib/pgadmin
-
-networks:
-  lavalink:
-  postgres:
-
-volumes:
-  pgadmin:
-  postgres:
+       - ./pgadmin_data:/var/lib/pgadmin
