@@ -19,9 +19,9 @@ log = logging.getLogger(__name__)
 class Bongo_Bot(commands.Bot):
     """Handles intents, prefixs, and database init automatically"""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, command_prefix="!", *args, **kwargs):
         super().__init__(
-            command_prefix="!", intents=self.get_intents(), *args, **kwargs
+            command_prefix=command_prefix, intents=self.get_intents(), *args, **kwargs
         )
         self.tree.on_error = self.on_tree_error
 

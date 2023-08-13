@@ -24,9 +24,9 @@ if len(sys.argv) < 2:
     load_dotenv(root_path.joinpath(".env"))
 
 TOKEN = getenv("DISCORD_TOKEN")
-
-bot = Bongo_Bot()
-
+PREFIX = getenv("COMMAND_PREFIX", "!")
+log.info(F"PREFIX {PREFIX}")
+bot = Bongo_Bot(command_prefix=PREFIX)
 
 async def main():
     async with bot:
