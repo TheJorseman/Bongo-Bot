@@ -1,6 +1,8 @@
+# dev
+postgres_data/
+pgadmin_data/
 #vscode
 .vscode/
-
 #wavelink dependencies
 lavalink/Lavalink.jar
 lavalink/logs/
